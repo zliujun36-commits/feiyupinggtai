@@ -1,8 +1,9 @@
+import {inPolygon} from './core.js';
 'use strict';
 const definitions={restricted:{label:'限飞/禁飞区',color:'#cc535e'},authorization:{label:'授权飞行区',color:'#4483cc'},warning:{label:'警示区',color:'#e3a031'},enhanced:{label:'加强警示区',color:'#e47735'},controlled:{label:'管制区',color:'#9863b5'},limited:{label:'限制区',color:'#a96043'}};
 const $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s);
 const escapeHTML=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let map,metadata,locationMarker,selected,timer;
+let map,metadata,locationMarker,selected,timer; let enabled=true;
 let records=[],filter='all',listLimit=40,currentCity='全国',loading=true,loadFailed=false;
 const activeLayers=new Set(Object.keys(definitions)),geometryGroups={},pointGroups={},paths=new Map();
 const typeByLabel=Object.fromEntries(Object.entries(definitions).map(([key,value])=>[value.label,key]));
@@ -14,9 +15,9 @@ function closeDetail(){if(selected&&paths.has(selected.id))paths.get(selected.id
 function updateLayers(){
  if(!map)return;
  for(const type of Object.keys(definitions)){
-  const enabled=activeLayers.has(type)&&(filter==='all'||filter===type),polygons=geometryGroups[type],points=pointGroups[type];if(!polygons)continue;
-  if(enabled)polygons.addTo(map);else map.removeLayer(polygons);
-  if(enabled&&map.getZoom()<8)points.addTo(map);else map.removeLayer(points);
+  const show=enabled&&activeLayers.has(type)&&(filter==='all'||filter===type),polygons=geometryGroups[type],points=pointGroups[type];if(!polygons)continue;
+  if(show)polygons.addTo(map);else map.removeLayer(polygons);
+  if(show&&map.getZoom()<8)points.addTo(map);else map.removeLayer(points);
  }
  $('#map-hint').textContent=map.getZoom()<8?'小点为区域中心 · 放大查看原始边界':'点击边界或列表查看详情 · 拖动浏览地图';
  if(selected&&!included(selected))closeDetail();
@@ -84,6 +85,9 @@ $('#search').addEventListener('input',search);$('#search-form').onsubmit=e=>{e.p
 $('#zoom-in').onclick=()=>map?.zoomIn();$('#zoom-out').onclick=()=>map?.zoomOut();$('#reset').onclick=()=>currentCity==='全国'?national():currentCity==='全部'?allData():city(currentCity);
 $('#locate').onclick=()=>{if(!map)return toast('地图尚未加载，请刷新后重试。');if(!navigator.geolocation)return toast('当前浏览器不支持定位，请搜索城市。');toast('正在获取位置，请允许浏览器定位…');navigator.geolocation.getCurrentPosition(p=>{const point=[p.coords.latitude,p.coords.longitude];if(locationMarker)map.removeLayer(locationMarker);locationMarker=L.circleMarker(point,{color:'#fff',weight:3,fillColor:'#307cc2',fillOpacity:1,radius:8}).addTo(map).bindTooltip('我的位置');map.setView(point,12);$('#map-city').textContent='我的位置';toast('已定位；附近未标注的区域不代表可飞。')},()=>toast('未能获取位置，请检查定位权限或搜索城市。'),{timeout:10000,enableHighAccuracy:false})};
 const dialog=$('#info-dialog');$('#help').onclick=$('#data-info').onclick=()=>dialog.showModal();$('#close-dialog').onclick=()=>dialog.close();dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close()}});
-createControls();
-if(window.L){map=L.map('map',{zoomControl:false,minZoom:2,maxZoom:18,preferCanvas:true}).setView([35.5,104.2],4);const tiles=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'}).addTo(map);let failures=0;tiles.on('tileerror',()=>{if(++failures===4)toast('部分底图暂时无法加载，请检查网络；限飞边界独立加载。')});L.control.scale({position:'bottomleft',imperial:false}).addTo(map);map.on('moveend',()=>{listLimit=40;updateLayers();renderList()})}else{$('#map').innerHTML='<div class="map-error">地图组件暂时无法加载。<br>请检查网络后刷新；仍可搜索和浏览区域列表。</div>';toast('地图组件加载失败，请检查网络后刷新。')}
-loadData();
+export function initAirspace(sharedMap){map=sharedMap;createControls();map.on('moveend',()=>{if(enabled){listLimit=40;updateLayers();renderList()}});loadData()}
+export function enableAirspace(value){enabled=value;updateLayers();if(value)renderList();else closeDetail()}
+export function airSearch(query){const q=query.toLowerCase();return records.filter(r=>r.name.toLowerCase().includes(q)||r.sourceId.includes(q)).slice(0,10)}
+export function chooseAir(record){select(record)}
+const bins=new Map();let indexed=0;
+export function screenAirspace(lng,lat){if(indexed!==records.length){bins.clear();for(const r of records){const b=r.bbox;for(let x=Math.floor(b[0]);x<=Math.floor(b[2]);x++)for(let y=Math.floor(b[1]);y<=Math.floor(b[3]);y++){const k=x+','+y;if(!bins.has(k))bins.set(k,[]);bins.get(k).push(r)}}indexed=records.length}return {loaded:records.length>0,hits:(bins.get(Math.floor(lng)+','+Math.floor(lat))||[]).filter(r=>lng>=r.bbox[0]&&lng<=r.bbox[2]&&lat>=r.bbox[1]&&lat<=r.bbox[3]&&inPolygon(lng,lat,r.feature.geometry.coordinates)).map(r=>({name:r.name,level:r.level,id:r.sourceId}))}}

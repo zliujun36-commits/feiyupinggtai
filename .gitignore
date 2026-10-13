@@ -1,3 +1,9 @@
 .sites-runtime/
 *.tar.gz
 node_modules/
+*.zip
+standalone-site/
+限飞区信息/
+classify_v3_全国一起跑_3.2.py
+.qa/
+__pycache__/
