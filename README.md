@@ -6,6 +6,12 @@
 
 ## 运行与构建
 
+项目仓库：https://github.com/zliujun36-commits/feiyupinggtai
+
+下载项目后，Windows 用户可双击 `启动飞域.cmd`，启动本地服务并打开浏览器。需要已安装 Node.js 20 或以上版本；启动器也支持本机已有的 Codex 捆绑 Node.js。重复启动会先检查服务是否已运行。日志保存在 `.sites-runtime/`，不上传至仓库。
+
+仓库包含网站运行所需的城市分片和空域数据；原始数据包、解压目录、报告、演示文稿及本地日志不纳入版本管理。Git 仓库用于源码协作，公开访问网站仍需单独部署。
+
 安装 Node.js 20 或以上版本。无需 npm install。在本目录运行：
 
 ```powershell
