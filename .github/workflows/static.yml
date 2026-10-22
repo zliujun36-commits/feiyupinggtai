@@ -37,6 +37,8 @@ jobs:
           node-version: '22'
       - name: Build versioned styles and verify assets
         run: npm run build
+      - name: Test platform and agent API
+        run: npm test
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact

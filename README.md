@@ -149,3 +149,15 @@ python scripts/package_standalone.py
 - `tests/`：数据、Worker 与静态部署验证。
 
 原 ZIP、解压目录、下载缓存、独立部署 ZIP 不进入源码版本管理，只保留必要可部署分片及代码。
+
+## 飞域助手（DeepSeek 云函数）
+
+右下角的助手面板、平台知识检索、云函数接口和测试已纳入仓库。**当前未配置云函数地址，界面显示“服务准备中”，并未接通真实 AI 问答。** 原有地图及数据功能不依赖问答服务。
+
+- 前端：`dist/agent.js`、`dist/agent.css`；构建时生成带内容版本号的发布文件。
+- 配置：`dist/agent-config.json` 只填写 HTTPS `/chat` 接口地址，不能填写密钥。
+- 云函数：`cloud/feiyu-agent/`，包含由现有 369 地区汇总及方法资料生成的知识文件。
+- 部署步骤及限制：[云函数说明](cloud/feiyu-agent/README.md)。DeepSeek Key 仅配置在云端环境变量中，访客不需要提供 Key。
+- 执行 `npm run build` 更新页面引用与知识库，`npm test` 验证数据、接口边界、限流与密钥不泄漏。接口测试使用模型替身，不等于真实 DeepSeek 联调成功。
+
+没有云账号时先注册并完成所需实名，再部署云函数、设置网关配额与模型密钥，最后填写前端接口地址并推送 GitHub。界面不会用固定答案冒充模型。

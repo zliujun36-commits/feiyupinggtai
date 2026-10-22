@@ -14,3 +14,4 @@ _out_v3_虚拟节点规划版/
 .env
 .env.*
 !.env.example
+.deploy/
