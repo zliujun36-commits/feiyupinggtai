@@ -28,3 +28,20 @@ test('missing credentials, throttling and upstream failures are honest and do no
  const base=await start(t,{env:{DEEPSEEK_API_KEY:'test-key-not-real',MAX_REQUESTS_PER_MINUTE:'1'},fetchImpl:async()=>new Response('sensitive provider diagnostics',{status:401})});
  const bad=await post(base,{question:'你好'});assert.equal(bad.status,502);assert.ok(!(await bad.text()).includes('sensitive'));assert.equal((await post(base,{question:'再次提问'})).status,429);
 });
+
+test('general and academic questions reach the model; only actually cited platform sources are returned',async t=>{
+ const requests=[];let answer='列表推导式可以写成 [x * x for x in range(5)]。';
+ const base=await start(t,{env:{DEEPSEEK_API_KEY:'test-key-not-real'},fetchImpl:async(url,options)=>{
+  requests.push(JSON.parse(options.body));return Response.json({choices:[{message:{content:answer}}]});
+ }});
+ const health=await (await fetch(base+'/health')).json();assert.equal(health.assistantVersion,'general-platform-v1');
+ const ordinary=await post(base,{question:'解释 Python 列表推导式',context:{cityId:'e736d30240dd622e'}});
+ assert.equal(ordinary.status,200);const general=await ordinary.json();assert.deepEqual(general.sources,[]);
+ const payload=JSON.parse(requests[0].messages.at(-1).content);
+ assert.equal(payload.问题,'解释 Python 列表推导式');assert.ok(payload.平台资料.some(s=>s.title.includes('深圳')));
+ assert.ok(!requests[0].messages[0].content.includes('只回答飞域'));
+ answer='实验中需控制混杂因素；飞域全国指标可作为平台案例[S2]。不存在的编号不应成为链接[S999]。';
+ const academic=await post(base,{question:'解释混杂因素与对照实验',history:[{role:'user',content:'解释 Python 列表推导式'},{role:'assistant',content:general.answer}]});
+ assert.equal(academic.status,200);const result=await academic.json();assert.deepEqual(result.sources.map(s=>s.id),['S2']);
+ assert.equal(requests[1].messages[1].content,'解释 Python 列表推导式');
+});

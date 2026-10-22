@@ -64,15 +64,15 @@
         AI 智能助手
       </button>
       <section class="panel" role="dialog" id="feiyu-ai-panel" aria-label="飞域 AI 对话面板">
-        <header class="top"><div><div class="title"><span class="star">✧</span><span class="label-title"></span></div><div class="subtitle">DeepSeek 接入 · 低空规划研究辅助</div></div>
+        <header class="top"><div><div class="title"><span class="star">✧</span><span class="label-title"></span></div><div class="subtitle">通用问答 · 飞域平台知识</div></div>
           <div class="top-actions"><button class="iconbutton config" type="button" title="调整窗口大小" aria-label="窗口设置">⚙</button><button class="iconbutton expand" type="button" title="展开窗口" aria-label="展开窗口" aria-pressed="false">⤢</button><button class="iconbutton close" type="button" title="关闭" aria-label="关闭">×</button></div></header>
         <button class="resize-handle" type="button" aria-label="拖动调整窗口大小" title="拖动左上角调整大小；方向键也可调整">↖</button>
         <div class="settings"><div class="size-row"><label class="width-setting">窗口宽度 <output class="width-value"></output><input class="width-range" aria-label="窗口宽度" type="range" min="320" max="960" step="10"></label><label>窗口高度 <output class="height-value"></output><input class="height-range" aria-label="窗口高度" type="range" min="300" max="900" step="10"></label></div>
           <div><button class="reset-size clear" type="button">恢复默认大小</button> <button class="clear-history clear" type="button">清空对话</button></div></div>
-        <main class="messages" role="log" aria-label="问答记录" aria-live="polite"><div class="msg assistant">你好，我是飞域 AI 助手。可以帮你分析无人机物流规划思路、空域数据需求及 GIS 技术问题。<br><br>可以直接提问，无需填写口令。回答会参考平台资料和当前城市、筛选及选中对象。点击右上角调整窗口大小。</div></main>
-        <div class="suggestions"><button type="button">低空物流需要哪些数据？</button><button type="button">如何设计无人机航线？</button></div>
+        <main class="messages" role="log" aria-label="问答记录" aria-live="polite"><div class="msg assistant">你好，我是飞域 AI。可以帮你解答日常问题、学习写作、编程和学术研究，也熟悉飞域的平台功能、数据与模型。<br><br>询问平台时，我会结合平台资料和当前页面；其他问题也可以直接问。涉及最新信息或论文引用时，请核对原始来源。</div></main>
+        <div class="suggestions"><button type="button">解释当前平台指标</button><button type="button">如何设计对照实验？</button><button type="button">解释 Python 列表推导式</button></div>
         <form class="composer"><textarea class="query" maxlength="1200" placeholder="输入你的问题…（Enter 发送）" aria-label="消息"></textarea><button class="stop clear" type="button" hidden>停止</button><button class="send" type="submit">发送</button></form>
-        <div class="foot">问题及页面上下文会发送给 DeepSeek；回答供研究参考，不构成飞行许可。</div>
+        <div class="foot">问题及页面上下文会发送给 DeepSeek；重要信息请核实，回答不代表飞行许可。</div>
       </section>`;
 
     const $ = (selector) => shadow.querySelector(selector);
