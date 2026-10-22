@@ -150,31 +150,33 @@ python scripts/package_standalone.py
 
 原 ZIP、解压目录、下载缓存、独立部署 ZIP 不进入源码版本管理，只保留必要可部署分片及代码。
 
-## 飞域 AI 智能助手（SCF 内测版）
+## 飞域 AI 智能助手（公开问答版）
 
-目前采用用户提供的 `feiyu-ai-embed.zip` 中的独立 JavaScript 组件，适配现有原生 HTML/JS + Leaflet 项目。右下角显示深绿色「AI 智能助手」，Shadow DOM 隔离样式，不改地图、空域查询、物流规划及数据分析逻辑。旧公开助手入口不再加载。
+新版助手采用与平台一致的深蓝配色。访客不再填写云函数地址或内测口令，网页向配置好的 HTTPS `/chat` 接口发起匿名问答。API Key 仅由云函数读取，前端不保存也不发送任何固定访问密钥。
 
-- `dist/feiyu-ai-widget.js`：聊天面板、设置、历史、加载/停止、错误提示、手机适配；使用 POST + Bearer 内测口令，发送 `message / history / context`，读取 `reply`。
-- `dist/agent.js`：只读地图上下文桥接，每次提问读取当前城市、模块、筛选、可见汇总和选中详情；保留 `window.feiyuAI.setContext(text)` 扩展入口。
-- `dist/agent-config.json`：仅保存云函数 HTTPS URL，沿用用户提供的腾讯云控制台截图地址。构建时写入组件 `data-url`。
-- `scripts/build.mjs`：生成带内容哈希的组件和桥接脚本；更新 `dist/index.html`，避免旧缓存与双助手入口。
-- `tests/widget.test.mjs`：验证请求协议、口令不持久化、切换地址时清除口令、页面离开时清除口令、历史边界、错误处理及取消后的过期响应。
+### 窗口与页面联动
 
-### 使用和联调
+- 桌面端拖动聊天面板左上角可改变宽高；聚焦该手柄后方向键也能调整。
+- 点击 ⚙ 打开宽度/高度滑块；点击展开按钮扩大阅读区域，再次点击恢复；支持“恢复默认大小”。
+- 手机端宽度自动适应屏幕，高度可调。窗口尺寸限制在视口以内，聊天记录独立滚动。
+- 城市、模块、筛选、可见指标与选中对象在每次发送时读取；云端按城市等信息检索现有平台资料，回答附参考资料。
+- 支持最近 6 条成功消息、停止请求、清空对话、超时和错误提示。AI 回复以纯文本显示。
 
-1. 启动本地平台，打开 `http://127.0.0.1:4173/`。
-2. 云函数 `FRONTEND_ORIGIN` 必须设置成 `http://127.0.0.1:4173`；如果从 GitHub Pages 内测，改为 `https://zliujun36-commits.github.io`，不带仓库路径或末尾斜杠。用户原版云函数只支持一个来源，不能填逗号分隔的多个地址。
-3. 云端保留 `DEEPSEEK_API_KEY`、`APP_ACCESS_TOKEN`、`DEEPSEEK_MODEL`，使用原版事件函数协议。无需上传此前准备的 `feiyu-scf-ready.zip`：它是另一个公开接口方案，与这次内测协议不兼容。
-4. 点击「AI 智能助手」→ ⚙，在网页内输入内测口令。不要输入 DeepSeek API Key，也不要把口令或 Key 写入源码、配置或 Git。
-5. 口令仅保存于页面运行内存（含密码输入框）；刷新、离开页面或清空口令后需重输。切换 URL 会清空口令和对话，防止把旧口令发送到新地址。
-6. 发送一条实际问题验证回答。接口单元测试使用替身，不代表真实 DeepSeek 联调成功。
+### 文件与部署
 
-2026-10-22：用户修改 FRONTEND_ORIGIN 后，本地来源的 OPTIONS 预检返回 200，并正确允许 Content-Type / Authorization。未携带口令的 POST 返回 401，内测认证仍生效。用户在网页输入内测口令并提问后，已确认收到真实 AI 回答。口令未提供给开发助手，也未进入源码。
+- `dist/feiyu-ai-widget.js`：公开问答及尺寸调整组件，Shadow DOM 隔离样式。
+- `dist/agent.js`：只读结构化页面上下文桥接，保留 `window.feiyuAI.setContext(text)` 扩展。
+- `dist/agent-config.json`：仅保存 HTTPS `/chat` 地址；通过构建写入页面。
+- `scripts/build.mjs`：生成内容哈希资源，避免旧缓存；不加载旧内测入口。
+- `cloud/feiyu-agent/`：DeepSeek 服务、平台知识检索与腾讯 SCF 事件函数适配器。
+- `tests/widget.test.mjs`：无口令请求协议、错误处理、历史与取消、尺寸边界和鼠标/键盘调整测试。
 
-### 范围和公开上线边界
+先按 [腾讯云部署说明](cloud/feiyu-agent/TENCENT.md) 上传 `.deploy/feiyu-scf-ready.zip`，保留云端 DEEPSEEK_API_KEY，设置 PUBLIC_CHAT_ENABLED=true 和 ALLOWED_ORIGINS（可同时包含 GitHub 与本地来源）。无需删除旧 APP_ACCESS_TOKEN，升级后的函数不读取它。
 
-助手只获得用户问题、最近 8 条成功消息，以及最多 3500 字的当前页面上下文；不会自动读取全部城市明细、查询实时空域或运行路径优化。回答不能作为飞行许可。
+必须验证 GET `/health` 返回 ready:true，并实际 POST `/chat` 返回 answer 后再发布前端。旧内测函数要求 Bearer 口令，与新版网页不兼容，仅修改环境变量或隐藏输入框不能完成迁移。
 
-本版保留用户原有的 Bearer 内测口令认证。正式公开需改为真正的用户鉴权与服务端限流；CORS 不是用户认证。`cloud/feiyu-agent/` 下之前的公开问答及知识检索方案暂未连接到这个内测组件。
+公开匿名访问意味着任何人都可能调用并消耗模型额度。代码有每 IP 每分钟、单实例每日及并发限制，但计数会随实例重启或扩容变化，不能保证全账号费用上限；应在腾讯云网关配置配额并设置费用告警/模型额度管理。CORS 不是用户鉴权。需要区分访问者或精确个人配额时再接入登录或服务端签发的短期身份。
 
-执行 `node scripts/build.mjs` 与 `node --test tests/*.test.mjs` 检查构建及回归测试。
+执行 `node scripts/build.mjs`、`node --test tests/*.test.mjs` 与 `python scripts/package-tencent-agent.py` 重建并检查。地图、空域数据、物流规划和分析逻辑保持原样。
+
+2026-10-22 联调通过：GitHub 来源预检返回 204，`/health` 返回 ready:true；未携带口令的真实 `/chat` 请求返回 200，正确回答全国 DZ 110168、LD 41599、DC 7952 个模型节点并附参考资料。构建与 12 项测试通过。

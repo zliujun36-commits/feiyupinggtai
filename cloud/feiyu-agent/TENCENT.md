@@ -1,6 +1,6 @@
 # 腾讯云 SCF 事件函数接入
 
-> 备用公开接口方案，当前内测网页不使用此适配包。当前网页使用用户原版函数的 `message / history / context → reply` 协议和临时 Bearer 口令，配置请遵循根目录 README。不要为当前内测网页上传本包或开启 PUBLIC_CHAT_ENABLED。正式公开前仍需完善用户鉴权和服务端限流。
+> 当前新版助手采用此公开接口，不要求访客填写口令。请先部署此函数并验证，再发布新版前端。API Key 继续只保存在云端。
 
 目标入口（用户提供）：https://1513190565-7brz8jtghm.ap-beijing.tencentscf.com
 
@@ -8,7 +8,7 @@
 
 ## 修改前
 
-用户原版函数是内部访问版本：检查 FRONTEND_ORIGIN、要求 APP_ACCESS_TOKEN，接收 message 与字符串 context，返回 reply；没有 GET /health。本目录的备用公开接口使用 question、结构化 context，返回 answer 和 sources，与当前内测网页不兼容，不能仅粘贴地址。
+用户原版函数是内部访问版本：检查 FRONTEND_ORIGIN、要求 APP_ACCESS_TOKEN，接收 message 与字符串 context，返回 reply；没有 GET /health。新版公开接口使用 question、结构化 context，返回 answer 和 sources，与旧内测网页不兼容，需要同时升级新版网页。
 
 保留旧 ZIP 以便回滚。新包不读取 APP_ACCESS_TOKEN；公开问答必须由管理员明确设置 PUBLIC_CHAT_ENABLED=true 才启用。启用后任何访客可调用并消耗你的 DeepSeek 额度，不应把旧访问令牌放入网页来伪装鉴权。
 
