@@ -5,7 +5,7 @@ http.createServer((req,res)=>{
  if(!['GET','HEAD'].includes(req.method)){res.writeHead(405,{Allow:'GET, HEAD'});return res.end()}
  let pathname;try{pathname=decodeURIComponent(new URL(req.url,'http://localhost').pathname)}catch{res.writeHead(400);return res.end()}
  const file=path.resolve(root,'.'+(pathname==='/'?'/index.html':pathname));
- if(!file.startsWith(root+path.sep)||pathname.includes('\0')){res.writeHead(403);return res.end()}
+ if(!file.startsWith(root+path.sep)||pathname.includes('\0')||pathname.includes('\\')){res.writeHead(403);return res.end()}
  fs.stat(file,(err,stat)=>{if(err||!stat.isFile()){res.writeHead(404);return res.end('Not found')}
   const etag='"'+stat.size+'-'+Math.trunc(stat.mtimeMs)+'"';res.setHeader('ETag',etag);res.setHeader('Cache-Control','no-cache');res.setHeader('X-Content-Type-Options','nosniff');
   if(req.headers['if-none-match']===etag){res.writeHead(304);return res.end()}
