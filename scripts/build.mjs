@@ -14,13 +14,19 @@ await writeFile('dist/'+cssName,css);
 const originalHtml=await readFile('dist/index.html','utf8');
 assert.match(originalHtml,/href="platform(?:\.[a-f0-9]{12})?\.css"/);
 let html=originalHtml.replace(/href="platform(?:\.[a-f0-9]{12})?\.css"/,'href="'+cssName+'"');
-for(const ext of ['css','js']){
- const content=(await readFile('dist/agent.'+ext,'utf8')).replace(/\r\n/g,'\n');
- const name='agent.'+createHash('sha256').update(content).digest('hex').slice(0,12)+'.'+ext;
+// The supplied SCF widget replaces the old public-agent UI. Only one launcher is loaded.
+html=html.replace(/<link rel="stylesheet" data-feiyu-agent="css" href="[^"]+">/g,'').replace(/<script[^>]*data-feiyu-agent="[^"]+"[^>]*><\/script>/g,'');
+const config=JSON.parse(await readFile('dist/agent-config.json','utf8'));
+assert.deepEqual(Object.keys(config),['endpoint']);
+const endpoint=new URL(config.endpoint);
+assert.equal(endpoint.protocol,'https:');
+assert.ok(!endpoint.username&&!endpoint.password&&!endpoint.search&&!endpoint.hash);
+for(const base of ['feiyu-ai-widget','agent']){
+ const content=(await readFile('dist/'+base+'.js','utf8')).replace(/\r\n/g,'\n');
+ const name=base+'.'+createHash('sha256').update(content).digest('hex').slice(0,12)+'.js';
  await writeFile('dist/'+name,content);
- const tag=ext==='css'?'<link rel="stylesheet" data-feiyu-agent="css" href="'+name+'">':'<script type="module" data-feiyu-agent="js" src="'+name+'"></script>';
- const pattern=ext==='css'?/<link rel="stylesheet" data-feiyu-agent="css" href="[^"]+">/:/<script type="module" data-feiyu-agent="js" src="[^"]+"><\/script>/;
- html=pattern.test(html)?html.replace(pattern,tag):html.replace('</head>',tag+'</head>');
+ const attributes=base==='feiyu-ai-widget'?'defer data-url="'+endpoint.href.replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'"':'type="module"';
+ html=html.replace('</head>','<script '+attributes+' data-feiyu-agent="'+base+'" src="'+name+'"></script></head>');
 }
 if(html!==originalHtml)await writeFile('dist/index.html',html);
 for(const match of html.matchAll(/(?:src|href)="([^"#]+)"/g)){if(!match[1].includes('://'))await stat('dist/'+match[1]);}

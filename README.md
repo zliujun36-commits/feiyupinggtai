@@ -150,14 +150,31 @@ python scripts/package_standalone.py
 
 原 ZIP、解压目录、下载缓存、独立部署 ZIP 不进入源码版本管理，只保留必要可部署分片及代码。
 
-## 飞域助手（DeepSeek 云函数）
+## 飞域 AI 智能助手（SCF 内测版）
 
-右下角的助手面板、平台知识检索、云函数接口和测试已纳入仓库。**当前未配置云函数地址，界面显示“服务准备中”，并未接通真实 AI 问答。** 原有地图及数据功能不依赖问答服务。
+目前采用用户提供的 `feiyu-ai-embed.zip` 中的独立 JavaScript 组件，适配现有原生 HTML/JS + Leaflet 项目。右下角显示深绿色「AI 智能助手」，Shadow DOM 隔离样式，不改地图、空域查询、物流规划及数据分析逻辑。旧公开助手入口不再加载。
 
-- 前端：`dist/agent.js`、`dist/agent.css`；构建时生成带内容版本号的发布文件。
-- 配置：`dist/agent-config.json` 只填写 HTTPS `/chat` 接口地址，不能填写密钥。
-- 云函数：`cloud/feiyu-agent/`，包含由现有 369 地区汇总及方法资料生成的知识文件。
-- 部署步骤及限制：[云函数说明](cloud/feiyu-agent/README.md)。DeepSeek Key 仅配置在云端环境变量中，访客不需要提供 Key。
-- 执行 `npm run build` 更新页面引用与知识库，`npm test` 验证数据、接口边界、限流与密钥不泄漏。接口测试使用模型替身，不等于真实 DeepSeek 联调成功。
+- `dist/feiyu-ai-widget.js`：聊天面板、设置、历史、加载/停止、错误提示、手机适配；使用 POST + Bearer 内测口令，发送 `message / history / context`，读取 `reply`。
+- `dist/agent.js`：只读地图上下文桥接，每次提问读取当前城市、模块、筛选、可见汇总和选中详情；保留 `window.feiyuAI.setContext(text)` 扩展入口。
+- `dist/agent-config.json`：仅保存云函数 HTTPS URL，沿用用户提供的腾讯云控制台截图地址。构建时写入组件 `data-url`。
+- `scripts/build.mjs`：生成带内容哈希的组件和桥接脚本；更新 `dist/index.html`，避免旧缓存与双助手入口。
+- `tests/widget.test.mjs`：验证请求协议、口令不持久化、切换地址时清除口令、页面离开时清除口令、历史边界、错误处理及取消后的过期响应。
 
-没有云账号时先注册并完成所需实名，再部署云函数、设置网关配额与模型密钥，最后填写前端接口地址并推送 GitHub。界面不会用固定答案冒充模型。
+### 使用和联调
+
+1. 启动本地平台，打开 `http://127.0.0.1:4173/`。
+2. 云函数 `FRONTEND_ORIGIN` 必须设置成 `http://127.0.0.1:4173`；如果从 GitHub Pages 内测，改为 `https://zliujun36-commits.github.io`，不带仓库路径或末尾斜杠。用户原版云函数只支持一个来源，不能填逗号分隔的多个地址。
+3. 云端保留 `DEEPSEEK_API_KEY`、`APP_ACCESS_TOKEN`、`DEEPSEEK_MODEL`，使用原版事件函数协议。无需上传此前准备的 `feiyu-scf-ready.zip`：它是另一个公开接口方案，与这次内测协议不兼容。
+4. 点击「AI 智能助手」→ ⚙，在网页内输入内测口令。不要输入 DeepSeek API Key，也不要把口令或 Key 写入源码、配置或 Git。
+5. 口令仅保存于页面运行内存（含密码输入框）；刷新、离开页面或清空口令后需重输。切换 URL 会清空口令和对话，防止把旧口令发送到新地址。
+6. 发送一条实际问题验证回答。接口单元测试使用替身，不代表真实 DeepSeek 联调成功。
+
+2026-10-22：用户修改 FRONTEND_ORIGIN 后，本地来源的 OPTIONS 预检返回 200，并正确允许 Content-Type / Authorization。未携带口令的 POST 返回 401，内测认证仍生效。用户在网页输入内测口令并提问后，已确认收到真实 AI 回答。口令未提供给开发助手，也未进入源码。
+
+### 范围和公开上线边界
+
+助手只获得用户问题、最近 8 条成功消息，以及最多 3500 字的当前页面上下文；不会自动读取全部城市明细、查询实时空域或运行路径优化。回答不能作为飞行许可。
+
+本版保留用户原有的 Bearer 内测口令认证。正式公开需改为真正的用户鉴权与服务端限流；CORS 不是用户认证。`cloud/feiyu-agent/` 下之前的公开问答及知识检索方案暂未连接到这个内测组件。
+
+执行 `node scripts/build.mjs` 与 `node --test tests/*.test.mjs` 检查构建及回归测试。
