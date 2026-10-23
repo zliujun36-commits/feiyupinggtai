@@ -73,7 +73,7 @@ async function loadData(){
   records=parsed;metadata={...collection.metadata,bounds:collection.bbox};
   if(map){
    for(const type of Object.keys(definitions)){geometryGroups[type]=L.layerGroup();pointGroups[type]=L.layerGroup()}
-   for(const r of records){const layer=L.geoJSON(r.feature,{style:()=>style(r),onEachFeature:(_,polygon)=>polygon.on('click',()=>select(r))});layer.addTo(geometryGroups[r.type]);paths.set(r.id,layer);const b=r.bbox;L.circleMarker([(b[1]+b[3])/2,(b[0]+b[2])/2],{radius:3,color:definitions[r.type].color,weight:0,fillOpacity:.8}).on('click',()=>select(r)).addTo(pointGroups[r.type])}
+   for(const r of records){const layer=L.geoJSON(r.feature,{style:()=>style(r),onEachFeature:(_,polygon)=>polygon.on('click',()=>select(r))});layer.addTo(geometryGroups[r.type]);paths.set(r.id,layer);const b=r.bbox;L.circleMarker([(b[1]+b[3])/2,(b[0]+b[2])/2],{radius:3.25,color:definitions[r.type].color,weight:.75,opacity:.9,fillOpacity:.65}).on('click',()=>select(r)).addTo(pointGroups[r.type])}
   }
   $('#dataset-status').textContent=`已收录 ${records.length.toLocaleString()} 个区域`;$('#dataset-date').textContent=`文件生成于 ${metadata.generatedAt} · 非实时数据`;
   $('#source-description').textContent=`当前导入「${metadata.sourceFile}」，共 ${records.length.toLocaleString()} 个区域、${metadata.vertexCount.toLocaleString()} 个边界坐标。文件标注来源为 ${metadata.declaredSource}，生成日期为 ${metadata.generatedAt}。`;
