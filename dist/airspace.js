@@ -1,4 +1,5 @@
 import {inPolygon} from './core.js';
+import {sourceSummary,featureSourceInfo} from './airspace-info.js';
 'use strict';
 const definitions={restricted:{label:'限飞/禁飞区',color:'#cc535e'},authorization:{label:'授权飞行区',color:'#4483cc'},warning:{label:'警示区',color:'#e3a031'},enhanced:{label:'加强警示区',color:'#e47735'},controlled:{label:'管制区',color:'#9863b5'},limited:{label:'限制区',color:'#a96043'}};
 const $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s);
@@ -43,8 +44,8 @@ function select(r){
  closeDetail();selected=r;
  if(!included(r)){filter='all';activeLayers.add(r.type);syncControls();updateLayers()}
  if(map){const b=r.bbox;map.fitBounds([[b[1],b[0]],[b[3],b[2]]],{padding:[48,48],maxZoom:13,animate:false});paths.get(r.id)?.setStyle({weight:3,fillOpacity:.32});paths.get(r.id)?.bringToFront()}
- const detail=$('#detail');detail.hidden=false;
- detail.innerHTML=`<button class="detail-close" aria-label="关闭详情">×</button><span class="detail-badge" style="color:${definitions[r.type].color}">${escapeHTML(r.level)}</span><h3>${escapeHTML(r.name)}</h3><dl><dt>原始区域 ID</dt><dd>${escapeHTML(r.sourceId)}</dd><dt>文件生成日期</dt><dd>${escapeHTML(metadata.generatedAt)}</dd><dt>文件标注来源</dt><dd>${escapeHTML(metadata.declaredSource)}</dd><dt>高度 / 有效期</dt><dd>原文件未提供</dd></dl><p class="detail-note">按所提供 KML 的原始边界展示。分类沿用原文件，未核验现行状态；“授权飞行区”不表示已获飞行许可。</p>`;
+ const detail=$('#detail');detail.hidden=false;const info=featureSourceInfo(r,metadata);
+ detail.innerHTML=`<button class="detail-close" aria-label="关闭详情">×</button><span class="detail-badge" style="color:${definitions[r.type].color}">${escapeHTML(r.level)}</span><h3>${escapeHTML(r.name)}</h3><dl><dt>原始区域 ID</dt><dd>${escapeHTML(r.sourceId)}</dd><dt>${escapeHTML(info.dateLabel)}</dt><dd>${escapeHTML(info.date)}</dd><dt>文件标注来源</dt><dd>${escapeHTML(info.source)} · ${escapeHTML(info.file)}</dd><dt>高度</dt><dd>${escapeHTML(info.height)}</dd><dt>有效期</dt><dd>${escapeHTML(info.validity)}</dd></dl><p class="detail-note">${escapeHTML(info.note)} 未核验现行状态；“授权飞行区”不表示已获飞行许可。</p>`;
  detail.querySelector('button').onclick=()=>{closeDetail();renderList()};renderList();
 }
 function city(name){currentCity=name;closeDetail();$('#map-city').textContent=name;$('#search-results').replaceChildren();$('#search').value='';if(map)map.setView(cities[name],10);listLimit=40;renderList()}
@@ -75,8 +76,9 @@ async function loadData(){
    for(const type of Object.keys(definitions)){geometryGroups[type]=L.layerGroup();pointGroups[type]=L.layerGroup()}
    for(const r of records){const layer=L.geoJSON(r.feature,{style:()=>style(r),onEachFeature:(_,polygon)=>polygon.on('click',()=>select(r))});layer.addTo(geometryGroups[r.type]);paths.set(r.id,layer);const b=r.bbox;L.circleMarker([(b[1]+b[3])/2,(b[0]+b[2])/2],{radius:3.25,color:definitions[r.type].color,weight:.75,opacity:.9,fillOpacity:.65}).on('click',()=>select(r)).addTo(pointGroups[r.type])}
   }
-  $('#dataset-status').textContent=`已收录 ${records.length.toLocaleString()} 个区域`;$('#dataset-date').textContent=`文件生成于 ${metadata.generatedAt} · 非实时数据`;
-  $('#source-description').textContent=`当前导入「${metadata.sourceFile}」，共 ${records.length.toLocaleString()} 个区域、${metadata.vertexCount.toLocaleString()} 个边界坐标。文件标注来源为 ${metadata.declaredSource}，生成日期为 ${metadata.generatedAt}。`;
+  $('#dataset-status').textContent=`已收录 ${records.length.toLocaleString()} 个区域`;$('#dataset-date').textContent=metadata.updates?.length?'京沪查询数据更新于 2026-10-30 · 其余为基础 KML':`文件生成于 ${metadata.generatedAt} · 非实时数据`;
+  $('#source-description').textContent=sourceSummary(metadata);
+  const notes=$('#info-dialog').querySelectorAll('p:not(#source-description),.notice');if(metadata.updates?.length){for(const [i,note] of [...notes].entries())note.textContent=i===0?'JSON 按区域 ID 更新；未匹配旧记录继续保留。原始多边形坐标保留，圆形按米制半径近似绘制。包含周边地区，不按城市矩形裁剪。':'高度 0 不等于零米限高；有效期按原文件声明展示。JSON 坐标基准未声明，未作转换。空域叠加仅供初步筛查，不代表飞行许可。';}
   $('#type-summary').replaceChildren();for(const d of Object.values(definitions)){const li=document.createElement('li');li.textContent=`${d.label}：${metadata.counts[d.label]||0} 个`;$('#type-summary').appendChild(li)}
   updateLayers();
  }catch(error){loadFailed=true;$('#dataset-status').textContent='数据未加载';toast('限飞数据加载失败，请在列表中重试。');console.error('Airspace load failed:',error.message)}finally{loading=false;renderList();if($('#search').value)search()}
