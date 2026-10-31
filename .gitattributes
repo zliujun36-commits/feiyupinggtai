@@ -1,2 +1,2 @@
 # Preserve captured JSON bytes so provenance SHA-256 is identical on Windows and CI.
-data-sources/airspace/**/*.json -text
+data-sources/airspace/**/*.json -text whitespace=cr-at-eol

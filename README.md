@@ -1,5 +1,14 @@
 # 飞域 Airspace Explorer
 
+## 当前空域数据（2026-10-31 更新）
+
+以 `data-sources/airspace/national-2026-10-30/全国五类区域_数据.json` 为唯一展示来源，原 KML 和京沪补丁全部退出运行数据。历史导入说明仅供追溯，不应再次执行旧导入脚本覆盖当前数据。
+
+1,188 个区域 ID、1,528 个子区域：禁飞 810、限高 112、授权 28、警示 0、加强警示 578。按区域 ID 和子区域几何去重，不同时绘制母区域和子区域；不同真实区域的自然交叠不裁剪。高度和有效期保留源值，测试名称及未来生效记录保留核查标记。数据为 DJI 指定机型查询快照，不代表法定空域全集或飞行许可。
+
+重建与校验：`node scripts/import-national-airspace.mjs`、`node scripts/build.mjs`、`node scripts/verify-airspace.cjs`。云函数知识文件已生成，现有云函数需另行部署才能使用新知识。下文涉及 4,213 个要素和六类的说明为历史版本。
+
+
 低空空域与无人机物流规划分析平台 · 研究展示版 v3。
 
 沿用原项目的纯静态架构与 Leaflet，保留空域数据和查询逻辑。新增 ES modules、Canvas 点层、Web Worker、城市分片与可重复预处理，不依赖后端数据库或 ChatGPT 登录。运行时依赖 Leaflet 1.9.4 已放在 `dist/vendor/leaflet`，保留其许可证；没有 npm 第三方依赖。

@@ -6,6 +6,11 @@ const hash=v=>crypto.createHash('sha256').update(v).digest('hex');
 async function main(){
  const data=read('dist/data/airspace.geojson');
  const {boundsOf,mergeSnapshots}=await import('./update-airspace-json.mjs');
+ if(data.metadata.sourceKind==='dji-national'){
+  const bytes=fs.readFileSync(path.join(root,'data-sources/airspace/national-2026-10-30/全国五类区域_数据.json'));
+  const {convertNational}=await import('./import-national-airspace.mjs');
+  assert.deepEqual(convertNational(JSON.parse(bytes.toString('utf8').replace(/^\uFEFF/,'')),hash(bytes)),data);
+ }
  let original=data.features;
  if(data.metadata.updates?.length){
   const directory='data-sources/airspace/2026-10-30/';
@@ -29,7 +34,7 @@ async function main(){
  }
  assert.equal(data.features.length,data.metadata.featureCount);
  assert.equal(new Set(data.features.map(f=>f.id)).size,data.features.length);
- let vertices=0;const counts={},bbox=[180,90,-180,-90];
+ let vertices=0;const counts=Object.fromEntries(Object.keys(data.metadata.counts).map(k=>[k,0])),bbox=[180,90,-180,-90];
  for(const f of data.features){
   assert.equal(f.geometry.type,'Polygon');assert.deepEqual(boundsOf(f.geometry.coordinates),f.bbox);
   for(let i=0;i<4;i++)bbox[i]=i<2?Math.min(bbox[i],f.bbox[i]):Math.max(bbox[i],f.bbox[i]);

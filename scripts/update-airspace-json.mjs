@@ -94,6 +94,7 @@ async function main(){
   sources.push({file,sha256:hash(bytes),data:JSON.parse(bytes.toString('utf8').replace(/^\uFEFF/,'')),bytes});
  }
  const target=path.join(root,'dist/data/airspace.geojson'),base=JSON.parse(await readFile(target,'utf8'));
+ assert(base.metadata.sourceKind!=='dji-national','Current dataset uses the national snapshot; use import-national-airspace.mjs');
  const result=mergeSnapshots(base,sources);
  const audit=path.join(directory,'replaced-kml.geojson');
  // Retain the superseded original features for verification and provenance.

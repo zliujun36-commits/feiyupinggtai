@@ -1,7 +1,7 @@
 import {inPolygon} from './core.js';
 import {sourceSummary,featureSourceInfo} from './airspace-info.js';
 'use strict';
-const definitions={restricted:{label:'限飞/禁飞区',color:'#cc535e'},authorization:{label:'授权飞行区',color:'#4483cc'},warning:{label:'警示区',color:'#e3a031'},enhanced:{label:'加强警示区',color:'#e47735'},controlled:{label:'管制区',color:'#9863b5'},limited:{label:'限制区',color:'#a96043'}};
+const definitions={restricted:{label:'禁飞区',color:'#cc535e'},height:{label:'限高区',color:'#a96043'},authorization:{label:'授权区',color:'#4483cc'},warning:{label:'警示区',color:'#e3a031'},enhanced:{label:'加强警示区',color:'#e47735'}};
 const $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s);
 const escapeHTML=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let map,metadata,locationMarker,selected,timer; let enabled=true;
@@ -76,9 +76,9 @@ async function loadData(){
    for(const type of Object.keys(definitions)){geometryGroups[type]=L.layerGroup();pointGroups[type]=L.layerGroup()}
    for(const r of records){const layer=L.geoJSON(r.feature,{style:()=>style(r),onEachFeature:(_,polygon)=>polygon.on('click',()=>select(r))});layer.addTo(geometryGroups[r.type]);paths.set(r.id,layer);const b=r.bbox;L.circleMarker([(b[1]+b[3])/2,(b[0]+b[2])/2],{radius:3.25,color:definitions[r.type].color,weight:.75,opacity:.9,fillOpacity:.65}).on('click',()=>select(r)).addTo(pointGroups[r.type])}
   }
-  $('#dataset-status').textContent=`已收录 ${records.length.toLocaleString()} 个区域`;$('#dataset-date').textContent=metadata.updates?.length?'京沪查询数据更新于 2026-10-30 · 其余为基础 KML':`文件生成于 ${metadata.generatedAt} · 非实时数据`;
+  $('#dataset-status').textContent=`已收录 ${records.length.toLocaleString()} 个区域`;$('#dataset-date').textContent=metadata.sourceKind==='dji-national'?`全国查询快照 ${metadata.generatedAt.slice(0,10)} · 非实时数据`:`文件生成于 ${metadata.generatedAt} · 非实时数据`;
   $('#source-description').textContent=sourceSummary(metadata);
-  const notes=$('#info-dialog').querySelectorAll('p:not(#source-description),.notice');if(metadata.updates?.length){for(const [i,note] of [...notes].entries())note.textContent=i===0?'JSON 按区域 ID 更新；未匹配旧记录继续保留。原始多边形坐标保留，圆形按米制半径近似绘制。包含周边地区，不按城市矩形裁剪。':'高度 0 不等于零米限高；有效期按原文件声明展示。JSON 坐标基准未声明，未作转换。空域叠加仅供初步筛查，不代表飞行许可。';}
+  const notes=$('#info-dialog').querySelectorAll('p:not(#source-description),.notice');for(const note of notes)note.textContent='仅展示当前全国 JSON 的五类子区域；旧记录已替换。高度保留原值，不推断海拔或真高；有效期为源文件声明。坐标基准未核实，未作转换。未收录不代表可飞。';
   $('#type-summary').replaceChildren();for(const d of Object.values(definitions)){const li=document.createElement('li');li.textContent=`${d.label}：${metadata.counts[d.label]||0} 个`;$('#type-summary').appendChild(li)}
   updateLayers();
  }catch(error){loadFailed=true;$('#dataset-status').textContent='数据未加载';toast('限飞数据加载失败，请在列表中重试。');console.error('Airspace load failed:',error.message)}finally{loading=false;renderList();if($('#search').value)search()}
