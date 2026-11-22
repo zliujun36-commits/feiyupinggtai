@@ -1,0 +1,17 @@
+#road-panel {border:1px solid #dce5f0;border-radius:12px;background:#f5f8fc;padding:16px;margin:16px 0;}
+#road-panel h3 {margin:0 0 8px;color:#11213a;}
+#road-panel dl {display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 8px;margin:12px 0;font-size:0.85rem;}
+#road-panel dt {color:#52667e;}
+#road-panel dd {margin:0;overflow-wrap:anywhere;}
+.road-actions {display:flex;flex-wrap:wrap;gap:8px;margin:8px 0;}
+.road-actions button {margin:0;}
+#road-panel [role=status] {font-size:0.84rem;color:#184885;margin:8px 0 0;}
+#road-panel ol {font-size:0.8rem;margin:8px 0 0;padding-left:20px;overflow-wrap:anywhere;}
+#road-panel ol:empty,#road-panel [role=status]:empty {display:none;}
+#road-panel li {padding-inline-start:6px;margin-block:6px;}
+
+.road-peers {width:100%;display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:.82rem;color:#52667e;}
+#route-network-count {line-height:1.6;}
+
+body:not(.planning-mode) #planning-legend .route-legend-only,
+.planning-mode #planning-legend .relation-legend-only { display: none; }

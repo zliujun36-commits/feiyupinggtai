@@ -15,3 +15,9 @@ _out_v3_虚拟节点规划版/
 .env.*
 !.env.example
 .deploy/
+
+# Publish the byte-exact packed OSM graph. Raw graph files are local rebuild outputs.
+/dist/data/road-network/*.graph.gz
+# Legacy geometry is regenerated from the local survey. Keep the regression fixture.
+/dist/data/roads/*
+!/dist/data/roads/a905c0143d26dd63.bin.gz

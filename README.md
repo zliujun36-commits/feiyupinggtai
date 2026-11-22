@@ -1,5 +1,39 @@
 # 飞域 Airspace Explorer
 
+## 全国路网货运链路
+
+打开本机首页进入全国物流规划。全国图按地区和网格汇总需求，用原始路段抽样展示网络分布。放大到局部视野或选择地区后，显示完整道路折线。对象详情支持指定两个端点、规划整个上级链路和查看同级骨干邻点。侧栏可以单独隐藏线路或返回全国。统计分别列出实体线路、共址和受阻关系。
+
+### 道路、坐标与空域
+
+计算使用 OpenStreetMap 矢量道路的原始节点 ID、连接拓扑和折点。保留机动车道路及服务道路。交叉但不共享 OSM 节点的道路不会因画面相交而连通。各地区使用需求与节点外包框向四周扩展 0.055 度的研究范围，模型关系以地区为单位。
+
+将 2026 年 5 月路网与 OSM 按同名道路交叉口对应。每一对道路名称在两套样区中均须有唯一交叉位置。剔除异常位移，对至少有 3 个控制点的地区作留一验证。距离控制点 30 公里内的原始道路用相邻控制点的位移作局部插值；以距离及切线方向判断路段是否匹配。每段 OSM 边检查三个沿线位置，匹配半径 42 米。没有足够证据的地方保留 OSM 补充道路。仅道路优先级使用此配准；需求点和收录边界保留原始坐标。
+
+在建立道路图前剔除与五类 DJI 收录区域及坐标缓冲（0.000182 度）相交的边。每个端点接入可用路段的距离上限为 500 米，接入线同样检查空域。图中的实线表示 OSM 道路段，虚线表示端点接入。坐标配准精度按地区变化；空域来自指定机型快照，高度、实时管制、通行审批、建筑物、续航和运力未建模。
+
+### 线路算法
+
+1. 需求点 → DZ → LD → DC 采用原模型已有的归属关系。A* 在可用路网上寻路。费用为局部投影近似长度，匹配到 5 月路网的道路系数为 1，补充道路系数为 1.18。展示公里数使用实际折线长度加接入距离。
+2. 需求、DZ、LD、DC 各自以可接入的同级对象为种子进行多源 Dijkstra。不同种子的搜索前沿相遇时形成候选边，Kruskal 选取各连通分区内的最小生成森林。把同一路段上的接入位置依序连接以保留短距离邻接；共址单独计数。该方法无需构造所有点对，生成的骨干连接不代表既有配送合同。
+3. 所有上下级关系经批处理后保留成功或不可达原因；同级骨干按选中的森林边保存。任意其他同一区域点对共用已筛除障碍的道路图，查询时用 A*。全图概览与对象查询使用相同的道路折点。空域与各分片按 SHA-256 校验，版本不一致时网页停止绘制线路。
+
+### 离线重建
+
+从项目根目录运行。Python 需要 numpy、scipy、shapely 2 和 osmium，原生批处理程序需要支持 C++17 的编译器。网页本身只使用静态文件和浏览器 Worker。
+
+```powershell
+python scripts/fetch-osm-extract.py
+g++ -std=c++17 -O3 -static scripts/route-batch.cpp -o .qa/road-fit/route-batch.exe
+python scripts/extract-osm-roads.py
+python scripts/build-nationwide-routes.py --isolated --output .qa/road-fit/release
+python scripts/verify-nationwide-routes.py .qa/road-fit/release
+```
+
+离线输出应使用本次输入专用的空目录。相同输入的中断运行可以续算。验证通过后将三个城市分片（graph、paths、lines）、overview.gz 和全国 index.json 一起发布到 dist/data/road-network。全国索引包含快照地址、摘要、按地区控制点与留一残差、道路匹配量、各类结果数量。路网源为 [Geofabrik 中国提取](https://download.geofabrik.de/asia/china.html)。OSM 路网及其衍生路网数据库署名 © OpenStreetMap contributors，适用 [ODbL 1.0](https://www.openstreetmap.org/copyright)。
+
+GitHub Pages 随仓库发布 369 个地区的图、路线与图例。离线生成完毕后运行 `node scripts/pack-page-graphs.mjs dist/data/road-network dist/data/road-network`。编码器压缩坐标与边索引，逐地区验证还原字节的 SHA-256，再更新全国索引。原始图可留在本地供重建。旧版道路几何仅保留成都回归测试样本。
+
 ## 当前空域数据（2026-10-31 更新）
 
 以 `data-sources/airspace/national-2026-10-30/全国五类区域_数据.json` 为唯一展示来源，原 KML 和京沪补丁全部退出运行数据。历史导入说明仅供追溯，不应再次执行旧导入脚本覆盖当前数据。
