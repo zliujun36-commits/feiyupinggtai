@@ -15,3 +15,11 @@
 
 body:not(.planning-mode) #planning-legend .route-legend-only,
 .planning-mode #planning-legend .relation-legend-only { display: none; }
+
+/* The selected route sits above the network and below Leaflet tooltips. */
+.leaflet-pane.feiyu-candidate-pane { z-index: 450; }
+#map.has-candidate-route .feiyu-route-network { opacity: .16; }
+#map.has-candidate-route .leaflet-tile-pane { opacity: .68; }
+@media (prefers-reduced-motion: no-preference) {
+  #map .feiyu-route-network, #map .leaflet-tile-pane { transition: opacity 180ms ease-out; }
+}

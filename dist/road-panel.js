@@ -11,6 +11,9 @@ export function createRoadPlanner(map,closeDetail,notify) {
   const box=document.querySelector('#road-panel'),status=box.querySelector('[role=status]');
   const list=box.querySelector('ol'),run=box.querySelector('[data-road-run]');
   const routeLayer=L.layerGroup().addTo(map);
+  const container=map.getContainer();
+  map.createPane('candidateRoute').classList.add('feiyu-candidate-pane');
+  const renderer=L.svg({pane:'candidateRoute'});
   let start,end,worker,calculating=false;
   let peerCity,peerIndex;
   function peers(city){
@@ -35,6 +38,7 @@ export function createRoadPlanner(map,closeDetail,notify) {
   }
   function clearResult() {
     if (calculating) {worker?.terminate(); worker=null;}
+    container.classList.remove('has-candidate-route');
     calculating=false;routeLayer.clearLayers();list.replaceChildren();status.textContent='';
   }
   function reset() {
@@ -49,7 +53,7 @@ export function createRoadPlanner(map,closeDetail,notify) {
       const current=worker;
       function fail(message) {
         if(worker!==current)return;
-        current.terminate();worker=null;calculating=false;routeLayer.clearLayers();list.replaceChildren();
+        current.terminate();worker=null;clearResult();
         status.textContent=message;notify(message);refresh();
       }
       current.onerror=()=>fail('路网计算线程启动失败，请重试。');
@@ -62,8 +66,10 @@ export function createRoadPlanner(map,closeDetail,notify) {
           const coords=leg.points.map(([lon,lat])=>[lat,lon]);
           const label=stops[i].label+' → '+stops[i+1].label;
           if (leg.meters>0) {
-            const style={color:colors[stops[i+1].level],weight:4,opacity:0.94,smoothFactor:0,noClip:true};
-            L.polyline(coords.slice(1,-1),style).addTo(routeLayer).bindTooltip(element('span',label+' · 道路段'));
+            const style={renderer,color:colors[stops[i+1].level],weight:5,opacity:1,smoothFactor:0,noClip:true};
+            const road=coords.slice(1,-1);
+            L.polyline(road,{...style,color:'#fff',weight:8,interactive:false}).addTo(routeLayer);
+            L.polyline(road,style).addTo(routeLayer).bindTooltip(element('span',label+' · 道路段'));
             for(const pair of [coords.slice(0,2),coords.slice(-2)]) {
               L.polyline(pair,{...style,dashArray:'4 5'}).addTo(routeLayer).bindTooltip(element('span','端点接入段'));
             }
@@ -74,10 +80,11 @@ export function createRoadPlanner(map,closeDetail,notify) {
         }
         for (const stop of stops) {
           const pos=[stop.coord[1],stop.coord[0]];bounds.extend(pos);
-          L.circleMarker(pos,{radius:6,color:'#fff',weight:2,fillColor:colors[stop.level],fillOpacity:1})
+          L.circleMarker(pos,{renderer,radius:7,color:'#fff',weight:2.5,fillColor:colors[stop.level],fillOpacity:1})
             .addTo(routeLayer).bindTooltip(element('span',stop.label));
         }
         routeLayer.eachLayer(layer=>{if(layer.getBounds)bounds.extend(layer.getBounds());});
+        container.classList.toggle('has-candidate-route',total>0);
         if(bounds.isValid())map.fitBounds(bounds,{padding:[42,42],maxZoom:16});
         calculating=false;refresh();status.textContent='候选链路 '+data.legs.length+' 段，共 '+km(total)+'。实线沿道路，虚线为端点接入。已核查全部收录空域。';
         notify('已绘制候选链路 · '+km(total));
