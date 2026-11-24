@@ -113,7 +113,15 @@ dialog{color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:
 .topbar nav [data-mode="analysis"] { --nav-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='none' stroke='black' stroke-width='1.7'%3E%3Cpath d='M3 3v18h19M7 16v-5M12 16V5M17 16V8'/%3E%3C/g%3E%3C/svg%3E"); }
 .topbar nav [data-mode="methods"] { --nav-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='none' stroke='black' stroke-width='1.7'%3E%3Cpath d='M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h7'/%3E%3C/g%3E%3C/svg%3E"); }
 
-.brand img { display: block; box-sizing: content-box; height: 44px; width: auto; padding: 4px 9px; border-radius: 7px; background: #fff; }
+.brand-art { position: relative; display: block; }
+.brand-art img { display: block; height: 46px; width: auto; filter: brightness(1.16); }
+/* Use the supplied letterforms as a mask; leave the blue emblem in its original colors. */
+.brand-art::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(to bottom, #f3f7ff 76%, #b9cfe8 80%);
+  mask: url("feiyu-logo.png") center / contain no-repeat;
+  clip-path: inset(0 0 0 39%);
+}
 @media (max-width: 760px) {
-  .brand img { height: 34px; padding: 3px 7px; }
+  .brand-art img { height: 36px; }
 }
